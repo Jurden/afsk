@@ -1,3 +1,4 @@
+
 // A. Sheaff 3/7/2016
 // AFSK kernel driver framework - RPi
 // A file operations structure must be defined for this
@@ -40,10 +41,16 @@ struct afsk_data_t {
 	struct gpio_desc *shdn;		// Shutdown pin
 	u32 delim_cnt;				// Delimiter count
 	u8 *delim_buf;				// Delimtter buffer - changes size in ioctl
+	
+	struct mutex lock;
 };
-struct mutex lock;
 // AFSK data structure access between functions
-static struct afsk_data_t *afsk_data_fops;
+static struct afsk_data_t *afsk_data_fops = {
+	.owner			= THIS_MODULE,
+	.open			= afsk_open,
+	.release		= afsk_release,
+	.unlocked_ioctl		= afsk_ioctl,
+};
 
 // Sets device node permission on the /dev device special file
 static char *afsk_devnode(struct device *dev, umode_t *mode)
@@ -66,7 +73,7 @@ static int afsk_write(struct inode *inode, struct file *filp)
 	afsk_dat = dev_get_drvdata(dev);
 	
 	// Lock
-	mutex_lock_interuptable(lock);
+	mutex_lock_interruptable(lock);
 
 	// Enable PTT
 	// gpiod_set_value(afsk_dat->ptt,1);
@@ -107,7 +114,7 @@ static long afsk_ioctl(struct file *filp, uint cmd, ul arg)
 	switch (cmd) {
 		case query:
 			// Lock
-			mutex_lock_interuptable(lock);
+			mutex_lock_interruptable(lock);
 			get_user (memsize, (int __user *) arg);
 			memsize = afsk_dat->delim_cnt;
 			put_user(memsize, (uint8_t __user *) arg);
@@ -116,7 +123,7 @@ static long afsk_ioctl(struct file *filp, uint cmd, ul arg)
 			return 0;
 		case update:
 			// Lock
-			mutex_lock_interuptable(lock);
+			mutex_lock_interruptable(lock);
 			get_user(memsize, (uint32_t _user *) arg);
 			kfree(afsk_dat->delim_buf);
 			afsk_dat->delim_cnt = memsize;
@@ -127,6 +134,7 @@ static long afsk_ioctl(struct file *filp, uint cmd, ul arg)
 				mutex_unlock(lock);
 				return ENOMEM;
 			}
+			memset(afsk_dat->delim_buf, AX25_DELIM, afsk_dat->delim_cnt);
 			// Unlock
 			mutex_unlock(lock);
 			return 0;
