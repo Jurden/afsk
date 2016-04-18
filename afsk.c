@@ -41,7 +41,7 @@ struct afsk_data_t {
 	u32 delim_cnt;				// Delimiter count
 	u8 *delim_buf;				// Delimtter buffer - changes size in ioctl
 };
-
+struct mutex lock;
 // AFSK data structure access between functions
 static struct afsk_data_t *afsk_data_fops;
 
@@ -51,6 +51,90 @@ static char *afsk_devnode(struct device *dev, umode_t *mode)
 	if (mode) *mode = S_IRUGO|S_IWUGO;
 	return NULL;
 }
+
+// Jordan's code Start
+static int afsk_open(struct inode *inode, struct file *filp)
+{
+	if(filp->f_Flags & O_WRONLY) return 0;
+	return ENOTSUP;	//ERROR
+}
+static int afsk_write(struct inode *inode, struct file *filp)
+{
+	// Get struct info
+	struct device *dev = &pdev->dev;
+	struct afsk_data_t *afsk_dat;
+	afsk_dat = dev_get_drvdata(dev);
+	
+	// Lock
+	mutex_lock_interuptable(lock);
+
+	// Enable PTT
+	// gpiod_set_value(afsk_dat->ptt,1);
+	// Wait
+	// Enable enable
+	// gpiod_set_value(afsk_dat->enable,1);
+	
+	/* Data				*/
+	// Delim -> NRZI -> MS
+	// Write buffer -> bitstuffing -> NRZI -> MS
+	// Delim ->NRZI -> MS
+	// gpiod_set_value(afsk_dat->m_sb,0);
+	/* End Data			*/
+
+	// Disable enable
+	// gpiod_set_value(afsk_dat->enable,0);
+	// Wait
+	// Disable PTT
+	// gpiod_set_value(afsk_dat->Pptt,0);
+
+	// Unlock
+	mutex_unlock(lock);
+	return 0;
+}
+static int afsk_release(struct inode *inode, struct file *filp)
+{
+	return 0;
+}
+static long afsk_ioctl(struct file *filp, uint cmd, ul arg)
+{
+	int ret;
+	uint32_t memsize;
+	// Get struct info
+	struct device *dev = &pdev->dev;
+	struct afsk_data_t *afsk_dat;
+	afsk_dat = dev_get_drvdata(dev);
+
+	switch (cmd) {
+		case query:
+			// Lock
+			mutex_lock_interuptable(lock);
+			get_user (memsize, (int __user *) arg);
+			memsize = afsk_dat->delim_cnt;
+			put_user(memsize, (uint8_t __user *) arg);
+			// Unlock
+			mutex_unlock(lock);
+			return 0;
+		case update:
+			// Lock
+			mutex_lock_interuptable(lock);
+			get_user(memsize, (uint32_t _user *) arg);
+			kfree(afsk_dat->delim_buf);
+			afsk_dat->delim_cnt = memsize;
+			afsk_dat->delim_buf = kmalloc(afsk_dat->delim_cnt), GFP_KERNEL);
+			if (afsk_dat->delim_buf == NULL) {
+				printk(KERN_INFO "Failed to allocate delim memory\n");
+				// Unlock
+				mutex_unlock(lock);
+				return ENOMEM;
+			}
+			// Unlock
+			mutex_unlock(lock);
+			return 0;
+		default:
+			return -ENOTTY;
+	}
+}
+// Jordan's code end
 
 // My data is going to go in either platform_data or driver_data
 //  within &pdev->dev. (dev_set/get_drvdata)
