@@ -48,7 +48,7 @@ struct afsk_data_t {
 	struct gpio_desc *shdn;		// Shutdown pin
 	u32 delim_cnt;				// Delimiter count
 	u8 *delim_buf;				// Delimtter buffer - changes size in ioctl
-//	struct mutex lock;
+	struct mutex lock;
 };
 	
 
@@ -461,7 +461,7 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 {
 	
 	// Lock
-	//mutex_lock_interruptible(lock);
+	mutex_lock_interruptible(afsk_data_fops->lock);
 
 	// Enable PTT
 	gpiod_set_value(afsk_data_fops->ptt,1);
@@ -487,7 +487,7 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	gpiod_set_value(afsk_data_fops->Pptt,0);
 
 	// Unlock
-	//mutex_unlock(lock);
+	mutex_unlock(afsk_data_fops->lock);
 	return 0;
 }
 static int afsk_release(struct inode *inode, struct file *filp)
@@ -502,16 +502,16 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 	switch (cmd) {
 		case 1:
 			// Lock
-			//mutex_lock_interruptible(lock);
+			mutex_lock_interruptible(afsk_data_fops->lock);
 			get_user (memsize, (int __user *) arg);
 			memsize = afsk_data_fops->delim_cnt;
 			put_user(memsize, (uint8_t __user *) arg);
 			// Unlock
-			//mutex_unlock(lock);
+			mutex_unlock(afsk_data_fops->lock);
 			return 0;
 		case 2:
 			// Lock
-			//mutex_lock_interruptible(lock);
+			mutex_lock_interruptible(afsk_data_fops->lock);
 			get_user(memsize, (uint32_t __user *) arg);
 			kfree(afsk_data_fops->delim_buf);
 			afsk_data_fops->delim_cnt = memsize;
@@ -519,12 +519,12 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 			if (afsk_data_fops->delim_buf == NULL) {
 				printk(KERN_INFO "Failed to allocate delim memory\n");
 				// Unlock
-				//mutex_unlock(lock);
+				mutex_unlock(afsk_data_fops->lock);
 				return ENOMEM;
 			}
 			memset(afsk_data_fops->delim_buf, AX25_DELIM, afsk_data_fops->delim_cnt);
 			// Unlock
-			//mutex_unlock(lock);
+			mutex_unlock(afsk_data_fops->lock);
 			return 0;
 		default:
 			return -ENOTTY;
