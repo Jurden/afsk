@@ -1,4 +1,5 @@
-
+// Jordan Millett ECE 331 Project 1
+// Adapted from,
 // A. Sheaff 3/7/2016
 // AFSK kernel driver framework - RPi
 // A file operations structure must be defined for this
@@ -51,7 +52,7 @@ struct afsk_data_t {
 };
 	
 
-
+// Declare functions before file_operations
 static int afsk_open(struct inode *inode, struct file *filp);
 static int afsk_release(struct inode *inode, struct file *filp);
 static int afsk_write(struct file *filp, const char __user *buff, size_t count, loff_t *offp);
@@ -409,7 +410,8 @@ static int afsk_remove(struct platform_device *pdev)
 static int afsk_open(struct inode *inode, struct file *filp)
 {
 	if(filp->f_flags & O_WRONLY) return 0;
-	return -1;//ENOTSUP;	//ERROR
+	return -EINVAL;	// Error
+	//ENOTSUP doesn't work for some reason
 }
 static int afsk_write(struct file *filp, const char __user *buff, size_t count, loff_t *offp)
 {
@@ -418,23 +420,25 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	//mutex_lock_interruptible(lock);
 
 	// Enable PTT
-	// gpiod_set_value(afsk_dat->ptt,1);
+	gpiod_set_value(afsk_data_fops->ptt,1);
 	// Wait
+	mdelay(5);
 	// Enable enable
-	// gpiod_set_value(afsk_dat->enable,1);
+	gpiod_set_value(afsk_data_fops->enable,1);
 	
 	/* Data				*/
 	// Delim -> NRZI -> MS
 	// Write buffer -> bitstuffing -> NRZI -> MS
 	// Delim ->NRZI -> MS
-	// gpiod_set_value(afsk_dat->m_sb,0);
+	// gpiod_set_value(afsk_data_fops->m_sb,0);
 	/* End Data			*/
 
 	// Disable enable
-	// gpiod_set_value(afsk_dat->enable,0);
+	gpiod_set_value(afsk_data_fops->enable,0);
 	// Wait
+	mdelay(5);
 	// Disable PTT
-	// gpiod_set_value(afsk_dat->Pptt,0);
+	gpiod_set_value(afsk_data_fops->Pptt,0);
 
 	// Unlock
 	//mutex_unlock(lock);
