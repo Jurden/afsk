@@ -20,11 +20,11 @@
 #include <linux/gpio/consumer.h>
 #include <linux/stat.h>
 
-#include <asm/uaccess.h>
-#include <linux/init.h>
+//#include <asm/uaccess.h>
+//#include <linux/init.h>
 #include <linux/mutex.h>
-#include <linux/fcntl.h>
-#include <linux/sched.h>
+//#include <linux/fcntl.h>
+//#include <linux/sched.h>
 
 #define AFSK_NOSTUFF 0
 #define AFSK_STUFF 1
@@ -48,7 +48,7 @@ struct afsk_data_t {
 	struct gpio_desc *shdn;		// Shutdown pin
 	u32 delim_cnt;				// Delimiter count
 	u8 *delim_buf;				// Delimtter buffer - changes size in ioctl
-	//struct mutex *lock;
+//	struct mutex lock;
 };
 	
 
@@ -407,7 +407,7 @@ static int afsk_remove(struct platform_device *pdev)
 }
 
 // Jordan's code Start
-void encoder_f(char *data, int mode)
+void encoder(char *data, int mode)
 {
 	int i;
 	int j;
@@ -474,8 +474,9 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	// Delim -> NRZI -> MS
 	
 	// Write buffer -> bitstuffing -> NRZI -> MS
+	void encoder(data, AFSK_STUFF);
+	
 	// Delim ->NRZI -> MS
-	// gpiod_set_value(afsk_data_fops->m_sb,0);
 	/* End Data			*/
 
 	// Disable enable
