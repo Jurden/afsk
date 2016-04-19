@@ -407,6 +407,50 @@ static int afsk_remove(struct platform_device *pdev)
 }
 
 // Jordan's code Start
+void encoder_f(char *data, int mode)
+{
+	int i;
+	int j;
+	int sm = 0;
+	int counter = 0;
+	int stuffed = 0;
+	int MASK = 1;
+	int *bits = kmalloc(4096);
+	int *stuffbits = kmalloc(4096);
+	int size = strlen(data);
+	int numbits = size * 8;
+	for (i = 0; i < size; i++) {
+		for (j = 0; j < 8; j++) {
+			bits[i * 8 + j] = (data[i] & (MASK << j));
+		}
+	}
+	if (mode) {
+		for (i = 0; i < numbits; i++) {
+			stuffbits[i + stuffed] = bits[i];
+			if(stuffbits[i + stuffed]) {
+				counter++;
+				if(counter == 5) {
+					stuffed++;
+					counter = 0;
+					numbits++;
+					stuffbits[i + stuffed] = 0;
+				}
+			} else {
+				counter = 0;
+			}
+		}
+	}
+	gpiod_set_value(afsk_data_fops->m_sb,sm);
+	for (i = 0; i < numbits; i++) {
+		if(stuffbits[i]) {
+			gpiod_set_value(afsk_data_fops->m_sb,sm);
+		} else {
+			sm = !sm;
+			gpiod_set_value(afsk_data_fops->m_sb,sm);
+		}
+	}
+	printf("\n");
+}
 static int afsk_open(struct inode *inode, struct file *filp)
 {
 	if(filp->f_flags & O_WRONLY) return 0;
@@ -428,6 +472,7 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	
 	/* Data				*/
 	// Delim -> NRZI -> MS
+	
 	// Write buffer -> bitstuffing -> NRZI -> MS
 	// Delim ->NRZI -> MS
 	// gpiod_set_value(afsk_data_fops->m_sb,0);
