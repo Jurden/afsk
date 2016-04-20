@@ -1,5 +1,5 @@
 // Jordan Millett ECE 331 Project 1
-// Adapted from,
+// Adapted from;
 // A. Sheaff 3/7/2016
 // AFSK kernel driver framework - RPi
 // A file operations structure must be defined for this
@@ -500,6 +500,7 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 		mutex_unlock(&afsk_data_fops->lock);
 		return -ENOMEM;
 	}
+
 	/* Data				*/
 	// Delim -> NRZI -> MS
 	
