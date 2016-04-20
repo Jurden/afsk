@@ -419,6 +419,7 @@ int encoder(char *data, int mode)
 	int MASK = 1;
 	int *bits, *stuffbits;
 	int size, numbits;
+
 	size = strlen(data);
 	numbits = size * 8;
 	// Memory allocation
@@ -428,11 +429,13 @@ int encoder(char *data, int mode)
 	if (bits == NULL || stuffbits == NULL) {
 		return -ENOMEM;
 	}
+	// Store binary values
 	for (i = 0; i < size; i++) {
 		for (j = 0; j < 8; j++) {
 			bits[i * 8 + j] = (data[i] & (MASK << j));
 		}
 	}
+	// Bit stuffing
 	if (mode) {
 		for (i = 0; i < numbits; i++) {
 			stuffbits[i + stuffed] = bits[i];
@@ -448,7 +451,12 @@ int encoder(char *data, int mode)
 				counter = 0;
 			}
 		}
+	} else {
+		for (i = 0; i < numbits; i++) {
+			stuffbits[i] = bits[i];
+		}
 	}
+	// NRZI
 	gpiod_set_value(afsk_data_fops->m_sb,sm);
 	for (i = 0; i < numbits; i++) {
 		if(stuffbits[i]) {
@@ -470,17 +478,28 @@ static int afsk_open(struct inode *inode, struct file *filp)
 }
 static int afsk_write(struct file *filp, const char __user *buff, size_t count, loff_t *offp)
 {
-	int ret;	
+	int ret;
+	char *data;	
 	// Lock
-	mutex_lock_interruptible(&afsk_data_fops->lock);
-
+	ret = mutex_lock_interruptible(&afsk_data_fops->lock);
+	if (!ret) {
+		// Unlock
+		mutex_unlock(&afsk_data_fops->lock);
+		return -ENOLCK;
+	}
 	// Enable PTT
 	gpiod_set_value(afsk_data_fops->ptt,1);
 	// Wait
 	mdelay(5);
 	// Enable enable
 	gpiod_set_value(afsk_data_fops->enable,1);
-	
+	// Get data from userspace
+	ret = copy_from_user(data, buff, count);
+	if (!ret) {
+		// Unlock
+		mutex_unlock(&afsk_data_fops->lock);
+		return -ENOMEM;
+	}
 	/* Data				*/
 	// Delim -> NRZI -> MS
 	
@@ -517,22 +536,46 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 
 	switch (cmd) {
 		case 1:
-			// Lock
-			mutex_lock_interruptible(&afsk_data_fops->lock);
+			ret = mutex_lock_interruptible(&afsk_data_fops->lock);
+			if (!ret) {
+				// Unlock
+				mutex_unlock(&afsk_data_fops->lock);
+				return -ENOLCK;
+			}
 			// Gets arg value from userspace, probably unnecessary
-			get_user (memsize, (int __user *) arg);
+			ret = get_user (memsize, (int __user *) arg);
+			if (!ret) {
+				// Unlock
+				mutex_unlock(&afsk_data_fops->lock);
+				return -EFAULT;
+			}
+			
 			// Gets size of allocated delim buffer
 			memsize = afsk_data_fops->delim_cnt;
 			// Sends size to user space
-			put_user(memsize, (uint8_t __user *) arg);
+			ret = put_user(memsize, (uint8_t __user *) arg);
+			if (!ret) {
+				// Unlock
+				mutex_unlock(&afsk_data_fops->lock);
+				return -EFAULT;
+			}
 			// Unlock
 			mutex_unlock(&afsk_data_fops->lock);
 			return 0;
 		case 2:
-			// Lock
-			mutex_lock_interruptible(&afsk_data_fops->lock);
+			ret = mutex_lock_interruptible(&afsk_data_fops->lock);
+			if (!ret) {
+				// Unlock
+				mutex_unlock(&afsk_data_fops->lock);
+				return -ENOLCK;
+			}
 			// Get value of arg from userspace
-			get_user(memsize, (uint32_t __user *) arg);
+			ret = get_user(memsize, (uint32_t __user *) arg);
+			if (!ret) {
+				// Unlock
+				mutex_unlock(&afsk_data_fops->lock);
+				return -EFAULT;
+			}
 			// Free old buffer
 			kfree(afsk_data_fops->delim_buf);
 			// Allocates new buffer and saves the size

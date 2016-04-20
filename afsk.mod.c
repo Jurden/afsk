@@ -20,6 +20,8 @@ __attribute__((section("__versions"))) = {
 	{ 0xcc75a739, __VMLINUX_SYMBOL_STR(module_layout) },
 	{ 0x9abedda8, __VMLINUX_SYMBOL_STR(platform_driver_unregister) },
 	{ 0x16f490dc, __VMLINUX_SYMBOL_STR(__platform_driver_register) },
+	{ 0x12da5bb2, __VMLINUX_SYMBOL_STR(__kmalloc) },
+	{ 0x97255bdf, __VMLINUX_SYMBOL_STR(strlen) },
 	{ 0xc82b6a51, __VMLINUX_SYMBOL_STR(dev_err) },
 	{ 0x5f754e5a, __VMLINUX_SYMBOL_STR(memset) },
 	{ 0x5b46d575, __VMLINUX_SYMBOL_STR(gpiod_set_value) },
@@ -53,4 +55,4 @@ __attribute__((section(".modinfo"))) =
 
 MODULE_ALIAS("of:N*T*Cbrcm,bcm2835-afsk*");
 
-MODULE_INFO(srcversion, "6EA327C023847D654A525D2");
+MODULE_INFO(srcversion, "8EDD3429E78E46A43DDA5C8");
