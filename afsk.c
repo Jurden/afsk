@@ -20,9 +20,11 @@
 #include <linux/gpio/consumer.h>
 #include <linux/stat.h>
 
-//#include <asm/uaccess.h>
-//#include <linux/init.h>
 #include <linux/mutex.h>
+#include <linux/delay.h>
+#include <linux/string.h>
+#include <asm/uaccess.h>
+//#include <linux/init.h>
 //#include <linux/fcntl.h>
 //#include <linux/sched.h>
 
@@ -407,7 +409,7 @@ static int afsk_remove(struct platform_device *pdev)
 }
 
 // Jordan's code Start
-void encoder(char *data, int mode)
+int encoder(char *data, int mode)
 {
 	int i;
 	int j;
@@ -415,10 +417,17 @@ void encoder(char *data, int mode)
 	int counter = 0;
 	int stuffed = 0;
 	int MASK = 1;
-	int *bits = kmalloc(4096);
-	int *stuffbits = kmalloc(4096);
-	int size = strlen(data);
-	int numbits = size * 8;
+	int *bits, *stuffbits;
+	int size, numbits;
+	size = strlen(data);
+	numbits = size * 8;
+	// Memory allocation
+	bits = kmalloc(8 * size * sizeof(int), GFP_KERNEL);
+	stuffbits = kmalloc((8 * size + (size * 8) / 5) * sizeof(int), GFP_KERNEL);
+	// Error checking
+	if (bits == NULL || stuffbits == NULL) {
+		return -ENOMEM;
+	}
 	for (i = 0; i < size; i++) {
 		for (j = 0; j < 8; j++) {
 			bits[i * 8 + j] = (data[i] & (MASK << j));
@@ -449,7 +458,9 @@ void encoder(char *data, int mode)
 			gpiod_set_value(afsk_data_fops->m_sb,sm);
 		}
 	}
-	printf("\n");
+	kfree(bits);
+	kfree(stuffbits);
+	return 0;
 }
 static int afsk_open(struct inode *inode, struct file *filp)
 {
@@ -459,9 +470,9 @@ static int afsk_open(struct inode *inode, struct file *filp)
 }
 static int afsk_write(struct file *filp, const char __user *buff, size_t count, loff_t *offp)
 {
-	
+	int ret;	
 	// Lock
-	mutex_lock_interruptible(afsk_data_fops->lock);
+	mutex_lock_interruptible(&afsk_data_fops->lock);
 
 	// Enable PTT
 	gpiod_set_value(afsk_data_fops->ptt,1);
@@ -474,7 +485,12 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	// Delim -> NRZI -> MS
 	
 	// Write buffer -> bitstuffing -> NRZI -> MS
-	void encoder(data, AFSK_STUFF);
+	ret = encoder(data, AFSK_STUFF);
+	if (!ret) {
+		// Unlock
+		mutex_unlock(&afsk_data_fops->lock);
+		return -ENOMEM;
+	}
 	
 	// Delim ->NRZI -> MS
 	/* End Data			*/
@@ -484,10 +500,10 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	// Wait
 	mdelay(5);
 	// Disable PTT
-	gpiod_set_value(afsk_data_fops->Pptt,0);
+	gpiod_set_value(afsk_data_fops->ptt,0);
 
 	// Unlock
-	mutex_unlock(afsk_data_fops->lock);
+	mutex_unlock(&afsk_data_fops->lock);
 	return 0;
 }
 static int afsk_release(struct inode *inode, struct file *filp)
@@ -502,29 +518,37 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 	switch (cmd) {
 		case 1:
 			// Lock
-			mutex_lock_interruptible(afsk_data_fops->lock);
+			mutex_lock_interruptible(&afsk_data_fops->lock);
+			// Gets arg value from userspace, probably unnecessary
 			get_user (memsize, (int __user *) arg);
+			// Gets size of allocated delim buffer
 			memsize = afsk_data_fops->delim_cnt;
+			// Sends size to user space
 			put_user(memsize, (uint8_t __user *) arg);
 			// Unlock
-			mutex_unlock(afsk_data_fops->lock);
+			mutex_unlock(&afsk_data_fops->lock);
 			return 0;
 		case 2:
 			// Lock
-			mutex_lock_interruptible(afsk_data_fops->lock);
+			mutex_lock_interruptible(&afsk_data_fops->lock);
+			// Get value of arg from userspace
 			get_user(memsize, (uint32_t __user *) arg);
+			// Free old buffer
 			kfree(afsk_data_fops->delim_buf);
+			// Allocates new buffer and saves the size
 			afsk_data_fops->delim_cnt = memsize;
 			afsk_data_fops->delim_buf = kmalloc(afsk_data_fops->delim_cnt, GFP_KERNEL);
+			// Error checking
 			if (afsk_data_fops->delim_buf == NULL) {
 				printk(KERN_INFO "Failed to allocate delim memory\n");
 				// Unlock
-				mutex_unlock(afsk_data_fops->lock);
-				return ENOMEM;
+				mutex_unlock(&afsk_data_fops->lock);
+				return -ENOMEM;
 			}
+			// Store the delim in the buffer
 			memset(afsk_data_fops->delim_buf, AX25_DELIM, afsk_data_fops->delim_cnt);
 			// Unlock
-			mutex_unlock(afsk_data_fops->lock);
+			mutex_unlock(&afsk_data_fops->lock);
 			return 0;
 		default:
 			return -ENOTTY;
