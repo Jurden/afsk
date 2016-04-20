@@ -480,6 +480,8 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 {
 	int ret;
 	char *data;	
+	data = kmalloc(sizeof(char) * count, GFP_KERNEL);
+
 	// Lock
 	ret = mutex_lock_interruptible(&afsk_data_fops->lock);
 	if (!ret) {
@@ -490,7 +492,7 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	if (afsk_data_fops->delim_buf == NULL) {
 		// Unlock
 		mutex_unlock(&afsk_data_fops->lock);
-		return -EN;
+		return -ENOMEM;
 	}
 
 	// Enable PTT
