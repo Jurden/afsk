@@ -487,6 +487,12 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 		mutex_unlock(&afsk_data_fops->lock);
 		return -ENOLCK;
 	}
+	if (afsk_data_fops->delim_buf == NULL) {
+		// Unlock
+		mutex_unlock(&afsk_data_fops->lock);
+		return -EN;
+	}
+
 	// Enable PTT
 	gpiod_set_value(afsk_data_fops->ptt,1);
 	// Wait
@@ -503,7 +509,12 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 
 	/* Data				*/
 	// Delim -> NRZI -> MS
-	
+	ret = encoder(afsk_data_fops->delim_buf, AFSK_NOSTUFF);
+	if (!ret) {
+		// Unlock
+		mutex_unlock(&afsk_data_fops->lock);
+		return -ENOMEM;
+	}
 	// Write buffer -> bitstuffing -> NRZI -> MS
 	ret = encoder(data, AFSK_STUFF);
 	if (!ret) {
@@ -511,8 +522,13 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 		mutex_unlock(&afsk_data_fops->lock);
 		return -ENOMEM;
 	}
-	
 	// Delim ->NRZI -> MS
+	ret = encoder(afsk_data_fops->delim_buf, AFSK_NOSTUFF);
+	if (!ret) {
+		// Unlock
+		mutex_unlock(&afsk_data_fops->lock);
+		return -ENOMEM;
+	}
 	/* End Data			*/
 
 	// Disable enable
@@ -595,7 +611,7 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 			mutex_unlock(&afsk_data_fops->lock);
 			return 0;
 		default:
-			return -ENOTTY;
+			return -EINVAL;
 	}
 }
 // Jordan's code end
