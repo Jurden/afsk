@@ -37,7 +37,7 @@ struct afsk_data_t;
 
 // Data to be "passed" around to various functions
 struct afsk_data_t {
-	int gpio_enable;    // Enable pin
+    int gpio_enable;    // Enable pin
 	int gpio_m_sb;      // Mark-Space bar pin
 	int gpio_ptt;  	    // Push to talk pin
 	int gpio_shdn;		// Shutdown input
