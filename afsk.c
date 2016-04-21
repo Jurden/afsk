@@ -6,8 +6,7 @@
 // module to work correctly
 #include <linux/module.h>
 #include <linux/kernel.h> 
-#include <linux/device.h>
-#include <linux/err.h>
+#include <linux/device.h> #include <linux/err.h>
 #include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
@@ -27,7 +26,7 @@
 #include "afsk.h"
 //#include <linux/init.h>
 //#include <linux/fcntl.h>
-//#include <linux/sched.h>
+#include <linux/sched.h>
 
 #define AFSK_NOSTUFF 0
 #define AFSK_STUFF 1
@@ -557,31 +556,30 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 {
 	int ret;
 	uint32_t memsize;
-
-	printk(KERN_INFO "IOCTL %d",cmd);
+	ret = 1;
 	switch (cmd) {
 		case 6669:
 			ret = mutex_lock_interruptible(afsk_data_fops->lock);
-			if (!ret) {
+			if (ret != 0) {
 				// Unlock
 				mutex_unlock(afsk_data_fops->lock);
 				printk(KERN_INFO "Locking");
 				return -ENOLCK;
 			}
 			// Gets arg value from userspace, probably unnecessary
-			ret = get_user (memsize, (int __user *) arg);
-			if (!ret) {
+	/*		ret = get_user (memsize, (int __user *) arg);
+			if (ret != 0) {
 				// Unlock
 				mutex_unlock(afsk_data_fops->lock);
 				printk(KERN_INFO "get_user");
 				return -EFAULT;
 			}
-			
+	*/		
 			// Gets size of allocated delim buffer
 			memsize = afsk_data_fops->delim_cnt;
 			// Sends size to user space
 			ret = put_user(memsize, (uint8_t __user *) arg);
-			if (!ret) {
+			if (ret != 0) {
 				// Unlock
 				mutex_unlock(afsk_data_fops->lock);
 				printk(KERN_INFO "put_user");
@@ -589,10 +587,11 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 			}
 			// Unlock
 			mutex_unlock(afsk_data_fops->lock);
+			printk(KERN_INFO "query %d",arg);
 			return 0;
 		case 6670:
 			ret = mutex_lock_interruptible(afsk_data_fops->lock);
-			if (!ret) {
+			if (ret != 0) {
 				// Unlock
 				mutex_unlock(afsk_data_fops->lock);
 				printk(KERN_INFO "Lockinghere");
@@ -600,11 +599,11 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 			}
 			// Get value of arg from userspace
 			ret = get_user(memsize, (uint32_t __user *) arg);
-			if (!ret) {
+			if (ret != 0) {
 				// Unlock
 				mutex_unlock(afsk_data_fops->lock);
 				printk(KERN_INFO "get_user");
-				return -EFAULT;
+				return ret;
 			}
 			// Free old buffer
 			kfree(afsk_data_fops->delim_buf);
@@ -622,6 +621,7 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 			memset(afsk_data_fops->delim_buf, AX25_DELIM, afsk_data_fops->delim_cnt);
 			// Unlock
 			mutex_unlock(afsk_data_fops->lock);
+			printk(KERN_INFO "query %d",arg);
 			return 0;
 		default:
 			printk(KERN_INFO "Invalid cmd");

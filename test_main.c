@@ -108,15 +108,18 @@ int test_query() {
 int test_set(int delim_n) {	
 	int fd;
 	int ret;
+	int four;
+	four = 4;
 	fd = open("/dev/afsk",O_WRONLY);
 	if (fd < 0) {
 		printf("Can't open device\n");
 		return -1;
 	}
 	printf("%d\n", fd);
-	ret = ioctl(fd, 6670, delim_n);
+	ret = ioctl(fd, 6670, &four);
 	printf("%d\n",ret);
-	ret = ioctl(fd, 6669, delim_n);
+	ret = ioctl(fd, 6669, &delim_n);
 	printf("%d\n",ret);
+	printf("%d\n",delim_n);
 	return 0;	
 }
