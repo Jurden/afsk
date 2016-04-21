@@ -6,7 +6,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
-
+#include <malloc.h>
 #include "encoder.h"
 #include "crc16.h"
 #include "ax25.h"
@@ -18,6 +18,7 @@ int test_set(int delim_n);
 int main(int argc, char *argv[])
 {
 	int test;
+	int delim_cnt;
 	int ret;
 	if(argc == 1) {
 		printf("Jordan's Test Code\n");
@@ -55,6 +56,8 @@ int main(int argc, char *argv[])
 				printf("Include number of delims\n");
 				return -1;
 			}
+			delim_cnt = atoi(argv[2]);
+			ret = test_set(delim_cnt);	
 			return 0;
 	}
 }
@@ -62,10 +65,36 @@ int test_afsk(char *callsign, char *data) {
 	int fd;
 	int size;
 	int ret;
+	int i;
+	uint8_t *buffer;
+	
 	printf("FD\n");
+	fd = open("/dev/afsk",O_RDONLY);
+	printf("%d \n",fd);	
 	fd = open("/dev/afsk",O_WRONLY);
+	if (fd < 0) {
+		printf("Can't open device\n");
+		return -1;
+	}
 	printf("%d\n",fd);
-
+	size = strlen(data);
+	buffer = (uint8_t *)malloc(size * 8 * sizeof(uint8_t));
+	if (buffer == NULL) {
+		printf("No memory");
+		return -1;
+	}
+	for (i = 0; i < size*8*sizeof(uint8_t); i++) {
+		if(i%2) {
+			buffer[i] = 1;
+		}
+		else buffer[i]=0;
+	}
+	if (buffer == NULL) {
+		printf("Error AX25");
+		return -1;
+	}
+	write(3,buffer,size);
+	printf("1 - %d 2 - %d 3 - %d\n",fd, buffer,size);
 		
 	return 0;
 }
@@ -73,8 +102,21 @@ int test_lock() {
 	return 0;
 }
 int test_query() {
+	
 	return 0;
 }
-int test_set(int delim_n) {
+int test_set(int delim_n) {	
+	int fd;
+	int ret;
+	fd = open("/dev/afsk",O_WRONLY);
+	if (fd < 0) {
+		printf("Can't open device\n");
+		return -1;
+	}
+	printf("%d\n", fd);
+	ret = ioctl(fd, 6670, delim_n);
+	printf("%d\n",ret);
+	ret = ioctl(fd, 6669, delim_n);
+	printf("%d\n",ret);
 	return 0;	
 }

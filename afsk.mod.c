@@ -38,9 +38,9 @@ __attribute__((section("__versions"))) = {
 	{ 0xfa2a45e, __VMLINUX_SYMBOL_STR(__memzero) },
 	{ 0x7ccc5863, __VMLINUX_SYMBOL_STR(kmem_cache_alloc_trace) },
 	{ 0xac9c7386, __VMLINUX_SYMBOL_STR(kmalloc_caches) },
-	{ 0x5f754e5a, __VMLINUX_SYMBOL_STR(memset) },
 	{ 0xbb72d4fe, __VMLINUX_SYMBOL_STR(__put_user_1) },
 	{ 0x3946ac6d, __VMLINUX_SYMBOL_STR(mutex_unlock) },
+	{ 0x5f754e5a, __VMLINUX_SYMBOL_STR(memset) },
 	{ 0x12da5bb2, __VMLINUX_SYMBOL_STR(__kmalloc) },
 	{ 0x353e3fa5, __VMLINUX_SYMBOL_STR(__get_user_4) },
 	{ 0xf6615c37, __VMLINUX_SYMBOL_STR(mutex_lock_interruptible) },
@@ -63,4 +63,4 @@ __attribute__((section(".modinfo"))) =
 
 MODULE_ALIAS("of:N*T*Cbrcm,bcm2835-afsk*");
 
-MODULE_INFO(srcversion, "09C3AD804F56140A2454554");
+MODULE_INFO(srcversion, "8D526D5640A217B022704D3");

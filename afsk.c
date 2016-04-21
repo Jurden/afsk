@@ -5,7 +5,7 @@
 // A file operations structure must be defined for this
 // module to work correctly
 #include <linux/module.h>
-#include <linux/kernel.h>
+#include <linux/kernel.h> 
 #include <linux/device.h>
 #include <linux/err.h>
 #include <linux/list.h>
@@ -51,7 +51,7 @@ struct afsk_data_t {
 	struct gpio_desc *shdn;		// Shutdown pin
 	u32 delim_cnt;				// Delimiter count
 	u8 *delim_buf;				// Delimtter buffer - changes size in ioctl
-	struct mutex lock;
+	struct mutex *lock;
 };
 	
 
@@ -268,7 +268,7 @@ static int afsk_probe(struct platform_device *pdev)
 	}
 #endif
 
-	mutex_init(&afsk_dat->lock);
+	mutex_init(afsk_dat->lock);
 	afsk_dat->major = register_chrdev(0,"afsk",&afsk_fops);
 	// Create a class instance
 	afsk_dat->afsk_class=class_create(THIS_MODULE, "afsk_class");
@@ -488,15 +488,15 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	data = kmalloc(sizeof(char) * count, GFP_KERNEL);
 
 	// Lock
-	ret = mutex_lock_interruptible(&afsk_data_fops->lock);
+	ret = mutex_lock_interruptible(afsk_data_fops->lock);
 	if (!ret) {
 		// Unlock
-		mutex_unlock(&afsk_data_fops->lock);
+		mutex_unlock(afsk_data_fops->lock);
 		return -ENOLCK;
 	}
 	if (afsk_data_fops->delim_buf == NULL) {
 		// Unlock
-		mutex_unlock(&afsk_data_fops->lock);
+		mutex_unlock(afsk_data_fops->lock);
 		return -ENOMEM;
 	}
 
@@ -510,7 +510,7 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	ret = copy_from_user(data, buff, count);
 	if (!ret) {
 		// Unlock
-		mutex_unlock(&afsk_data_fops->lock);
+		mutex_unlock(afsk_data_fops->lock);
 		return -ENOMEM;
 	}
 
@@ -519,21 +519,21 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	ret = encoder(afsk_data_fops->delim_buf, AFSK_NOSTUFF);
 	if (!ret) {
 		// Unlock
-		mutex_unlock(&afsk_data_fops->lock);
+		mutex_unlock(afsk_data_fops->lock);
 		return -ENOMEM;
 	}
 	// Write buffer -> bitstuffing -> NRZI -> MS
 	ret = encoder(data, AFSK_STUFF);
 	if (!ret) {
 		// Unlock
-		mutex_unlock(&afsk_data_fops->lock);
+		mutex_unlock(afsk_data_fops->lock);
 		return -ENOMEM;
 	}
 	// Delim ->NRZI -> MS
 	ret = encoder(afsk_data_fops->delim_buf, AFSK_NOSTUFF);
 	if (!ret) {
 		// Unlock
-		mutex_unlock(&afsk_data_fops->lock);
+		mutex_unlock(afsk_data_fops->lock);
 		return -ENOMEM;
 	}
 	/* End Data			*/
@@ -546,7 +546,7 @@ static int afsk_write(struct file *filp, const char __user *buff, size_t count, 
 	gpiod_set_value(afsk_data_fops->ptt,0);
 
 	// Unlock
-	mutex_unlock(&afsk_data_fops->lock);
+	mutex_unlock(afsk_data_fops->lock);
 	return 0;
 }
 static int afsk_release(struct inode *inode, struct file *filp)
@@ -558,46 +558,56 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 	int ret;
 	uint32_t memsize;
 
+	printk(KERN_INFO "IOCTL %d",cmd);
 	switch (cmd) {
-		case 1:
-			ret = mutex_lock_interruptible(&afsk_data_fops->lock);
+		case 6669:
+			printk(KERN_INFO "1");
+			ret = mutex_lock_interruptible(afsk_data_fops->lock);
 			if (!ret) {
 				// Unlock
-				mutex_unlock(&afsk_data_fops->lock);
+				mutex_unlock(afsk_data_fops->lock);
+				printk(KERN_INFO "Locking");
 				return -ENOLCK;
 			}
 			// Gets arg value from userspace, probably unnecessary
 			ret = get_user (memsize, (int __user *) arg);
 			if (!ret) {
 				// Unlock
-				mutex_unlock(&afsk_data_fops->lock);
+				mutex_unlock(afsk_data_fops->lock);
+				printk(KERN_INFO "get_user");
 				return -EFAULT;
 			}
 			
+				printk(KERN_INFO "2");
 			// Gets size of allocated delim buffer
 			memsize = afsk_data_fops->delim_cnt;
 			// Sends size to user space
+				printk(KERN_INFO "3");
 			ret = put_user(memsize, (uint8_t __user *) arg);
 			if (!ret) {
 				// Unlock
-				mutex_unlock(&afsk_data_fops->lock);
+				mutex_unlock(afsk_data_fops->lock);
+				printk(KERN_INFO "put_user");
 				return -EFAULT;
 			}
 			// Unlock
-			mutex_unlock(&afsk_data_fops->lock);
+			mutex_unlock(afsk_data_fops->lock);
+				printk(KERN_INFO "4");
 			return 0;
-		case 2:
-			ret = mutex_lock_interruptible(&afsk_data_fops->lock);
+		case 6670:
+			ret = mutex_lock_interruptible((afsk_data_fops->lock));
 			if (!ret) {
 				// Unlock
-				mutex_unlock(&afsk_data_fops->lock);
+				mutex_unlock(afsk_data_fops->lock);
+				printk(KERN_INFO "Locking");
 				return -ENOLCK;
 			}
 			// Get value of arg from userspace
 			ret = get_user(memsize, (uint32_t __user *) arg);
 			if (!ret) {
 				// Unlock
-				mutex_unlock(&afsk_data_fops->lock);
+				mutex_unlock(afsk_data_fops->lock);
+				printk(KERN_INFO "get_user");
 				return -EFAULT;
 			}
 			// Free old buffer
@@ -609,15 +619,16 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 			if (afsk_data_fops->delim_buf == NULL) {
 				printk(KERN_INFO "Failed to allocate delim memory\n");
 				// Unlock
-				mutex_unlock(&afsk_data_fops->lock);
+				mutex_unlock(afsk_data_fops->lock);
 				return -ENOMEM;
 			}
 			// Store the delim in the buffer
 			memset(afsk_data_fops->delim_buf, AX25_DELIM, afsk_data_fops->delim_cnt);
 			// Unlock
-			mutex_unlock(&afsk_data_fops->lock);
+			mutex_unlock(afsk_data_fops->lock);
 			return 0;
 		default:
+			printk(KERN_INFO "Invalid cmd");
 			return -EINVAL;
 	}
 }
