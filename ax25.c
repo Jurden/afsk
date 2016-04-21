@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "ax25.h"
-#include "crc.h"
+#include "crc16.h"
 
 #define DA_IDX 0
 #define DA_SSID_IDX 6
@@ -72,7 +72,7 @@ uint8_t* ax25(char *callsign, char *info, int size)
 	//calculate crc on everything until the last byte of info,
 	//which avoids the null terminator
 
-	crc = calcCRC(buffer,INFO_IDX+size);
+	crc = crc16(buffer,INFO_IDX+size);
 	memcpy(buffer+23+size,&crc,2);
 
 	write(1,buffer,25+size);

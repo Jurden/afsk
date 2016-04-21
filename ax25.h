@@ -3,6 +3,7 @@
 #define AX25
 
 #include <sys/types.h>
+#include <stdint.h>
 
 uint8_t* ax25(char *callsign, char *info, int size);
 
