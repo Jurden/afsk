@@ -24,6 +24,7 @@
 #include <linux/delay.h>
 #include <linux/string.h>
 #include <asm/uaccess.h>
+#include "afsk.h"
 //#include <linux/init.h>
 //#include <linux/fcntl.h>
 //#include <linux/sched.h>
@@ -267,6 +268,8 @@ static int afsk_probe(struct platform_device *pdev)
 	}
 #endif
 
+	mutex_init(&afsk_dat->lock);
+	afsk_dat->major = register_chrdev(0,"afsk",&afsk_fops);
 	// Create a class instance
 	afsk_dat->afsk_class=class_create(THIS_MODULE, "afsk_class");
 	if (IS_ERR(afsk_dat->afsk_class)) {
@@ -337,6 +340,8 @@ static int afsk_probe(struct platform_device *pdev)
 
 	// Set the delim buffer values
 	memset(afsk_dat->delim_buf,AX25_DELIM,afsk_dat->delim_cnt);
+
+	
 
 	printk(KERN_INFO "Registered\n");
 	dev_info(dev, "Initialized");

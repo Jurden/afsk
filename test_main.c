@@ -10,7 +10,7 @@
 #include "encoder.h"
 #include "crc16.h"
 #include "ax25.h"
-//#include "afsk.h"
+#include "afsk.h"
 int test_afsk(char *callsign, char *data);
 int test_lock();
 int test_query();
@@ -62,7 +62,7 @@ int test_afsk(char *callsign, char *data) {
 	int fd;
 	int size;
 	int ret;
-	
+	printf("FD\n");
 	fd = open("/dev/afsk",O_WRONLY);
 	printf("%d\n",fd);
 
