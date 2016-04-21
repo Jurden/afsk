@@ -6,7 +6,8 @@
 // module to work correctly
 #include <linux/module.h>
 #include <linux/kernel.h> 
-#include <linux/device.h> #include <linux/err.h>
+#include <linux/device.h> 
+#include <linux/err.h>
 #include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
@@ -552,6 +553,7 @@ static int afsk_release(struct inode *inode, struct file *filp)
 {
 	return 0;
 }
+
 static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 {
 	int ret;
@@ -566,15 +568,6 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 				printk(KERN_INFO "Locking");
 				return -ENOLCK;
 			}
-			// Gets arg value from userspace, probably unnecessary
-	/*		ret = get_user (memsize, (int __user *) arg);
-			if (ret != 0) {
-				// Unlock
-				mutex_unlock(afsk_data_fops->lock);
-				printk(KERN_INFO "get_user");
-				return -EFAULT;
-			}
-	*/		
 			// Gets size of allocated delim buffer
 			memsize = afsk_data_fops->delim_cnt;
 			// Sends size to user space
@@ -586,7 +579,7 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 				return -EFAULT;
 			}
 			// Unlock
-			mutex_unlock(afsk_data_fops->lock);
+			//mutex_unlock(afsk_data_fops->lock);
 			printk(KERN_INFO "query %d",arg);
 			return 0;
 		case 6670:
@@ -594,7 +587,7 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 			if (ret != 0) {
 				// Unlock
 				mutex_unlock(afsk_data_fops->lock);
-				printk(KERN_INFO "Lockinghere");
+				printk(KERN_INFO "Locking");
 				return -ENOLCK;
 			}
 			// Get value of arg from userspace
@@ -620,7 +613,7 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 			// Store the delim in the buffer
 			memset(afsk_data_fops->delim_buf, AX25_DELIM, afsk_data_fops->delim_cnt);
 			// Unlock
-			mutex_unlock(afsk_data_fops->lock);
+		//	mutex_unlock(afsk_data_fops->lock);
 			printk(KERN_INFO "query %d",arg);
 			return 0;
 		default:

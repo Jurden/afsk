@@ -22,6 +22,7 @@ __attribute__((section("__versions"))) = {
 	{ 0x16f490dc, __VMLINUX_SYMBOL_STR(__platform_driver_register) },
 	{ 0xfbc74f64, __VMLINUX_SYMBOL_STR(__copy_from_user) },
 	{ 0x8e865d3c, __VMLINUX_SYMBOL_STR(arm_delay_ops) },
+	{ 0xf6615c37, __VMLINUX_SYMBOL_STR(mutex_lock_interruptible) },
 	{ 0x97255bdf, __VMLINUX_SYMBOL_STR(strlen) },
 	{ 0xc82b6a51, __VMLINUX_SYMBOL_STR(dev_err) },
 	{ 0x5b46d575, __VMLINUX_SYMBOL_STR(gpiod_set_value) },
@@ -38,12 +39,11 @@ __attribute__((section("__versions"))) = {
 	{ 0xfa2a45e, __VMLINUX_SYMBOL_STR(__memzero) },
 	{ 0x7ccc5863, __VMLINUX_SYMBOL_STR(kmem_cache_alloc_trace) },
 	{ 0xac9c7386, __VMLINUX_SYMBOL_STR(kmalloc_caches) },
-	{ 0xbb72d4fe, __VMLINUX_SYMBOL_STR(__put_user_1) },
 	{ 0x3946ac6d, __VMLINUX_SYMBOL_STR(mutex_unlock) },
+	{ 0xbb72d4fe, __VMLINUX_SYMBOL_STR(__put_user_1) },
 	{ 0x5f754e5a, __VMLINUX_SYMBOL_STR(memset) },
 	{ 0x12da5bb2, __VMLINUX_SYMBOL_STR(__kmalloc) },
 	{ 0x353e3fa5, __VMLINUX_SYMBOL_STR(__get_user_4) },
-	{ 0xf6615c37, __VMLINUX_SYMBOL_STR(mutex_lock_interruptible) },
 	{ 0x2c1bb7df, __VMLINUX_SYMBOL_STR(_dev_info) },
 	{ 0x27e1a049, __VMLINUX_SYMBOL_STR(printk) },
 	{ 0x378bda78, __VMLINUX_SYMBOL_STR(devm_gpio_free) },
@@ -63,4 +63,4 @@ __attribute__((section(".modinfo"))) =
 
 MODULE_ALIAS("of:N*T*Cbrcm,bcm2835-afsk*");
 
-MODULE_INFO(srcversion, "B9CD5396B2C57A8C5E84959");
+MODULE_INFO(srcversion, "844611A5F80C0D2952B70DB");
