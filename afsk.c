@@ -25,8 +25,8 @@
 #include <linux/string.h>
 #include <asm/uaccess.h>
 #include "afsk.h"
-//#include <linux/init.h>
-//#include <linux/fcntl.h>
+#include <linux/init.h>
+#include <linux/fcntl.h>
 #include <linux/sched.h>
 
 #define AFSK_NOSTUFF 0
