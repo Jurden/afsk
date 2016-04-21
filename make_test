@@ -1,0 +1,12 @@
+cc = gcc
+TARGET = 2
+CFLAGS = -Wall -g
+OBJS = 2.o encoder.o
+LIBS = -Lm 
+
+all: ${TARGET}
+
+${TARGET}: ${OBJS}
+	${CC} ${CFLAGS} -o ${TARGET} ${OBJS} ${LIBS}
+clean:
+	rm -f ${target} ${OBJS}
