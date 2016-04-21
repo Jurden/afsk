@@ -63,4 +63,4 @@ __attribute__((section(".modinfo"))) =
 
 MODULE_ALIAS("of:N*T*Cbrcm,bcm2835-afsk*");
 
-MODULE_INFO(srcversion, "8D526D5640A217B022704D3");
+MODULE_INFO(srcversion, "1F3C659313F63F860B385A8");

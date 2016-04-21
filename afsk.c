@@ -267,7 +267,7 @@ static int afsk_probe(struct platform_device *pdev)
 		goto fail;
 	}
 #endif
-
+	afsk_dat->lock=kmalloc(sizeof(struct mutex),GFP_KERNEL);
 	mutex_init(afsk_dat->lock);
 	afsk_dat->major = register_chrdev(0,"afsk",&afsk_fops);
 	// Create a class instance
@@ -561,7 +561,6 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 	printk(KERN_INFO "IOCTL %d",cmd);
 	switch (cmd) {
 		case 6669:
-			printk(KERN_INFO "1");
 			ret = mutex_lock_interruptible(afsk_data_fops->lock);
 			if (!ret) {
 				// Unlock
@@ -578,11 +577,9 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 				return -EFAULT;
 			}
 			
-				printk(KERN_INFO "2");
 			// Gets size of allocated delim buffer
 			memsize = afsk_data_fops->delim_cnt;
 			// Sends size to user space
-				printk(KERN_INFO "3");
 			ret = put_user(memsize, (uint8_t __user *) arg);
 			if (!ret) {
 				// Unlock
@@ -592,14 +589,13 @@ static long afsk_ioctl(struct file *filp, uint cmd, unsigned long arg)
 			}
 			// Unlock
 			mutex_unlock(afsk_data_fops->lock);
-				printk(KERN_INFO "4");
 			return 0;
 		case 6670:
-			ret = mutex_lock_interruptible((afsk_data_fops->lock));
+			ret = mutex_lock_interruptible(afsk_data_fops->lock);
 			if (!ret) {
 				// Unlock
 				mutex_unlock(afsk_data_fops->lock);
-				printk(KERN_INFO "Locking");
+				printk(KERN_INFO "Lockinghere");
 				return -ENOLCK;
 			}
 			// Get value of arg from userspace
